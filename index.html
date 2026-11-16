@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#FAFCFB" />
+  <title>Folio — Textbook Exchange</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="https://fav.farm/📖" />
+
+  <!-- Classic Minimal Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sacramento&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient-workspace">
+    <div class="app-shell">
+
+      <!-- WELCOME SPLASH -->
+      <div id="splash-screen" class="splash-screen" aria-hidden="true">
+        <div class="splash-content">
+          <span class="splash-eyebrow">STUDENT TEXTBOOK NETWORK</span>
+          <div class="splash-title-wrap">
+            <h1 class="folio-script-large">Folio</h1>
+            <span class="exchange-text-large">exchange</span>
+          </div>
+          <p class="splash-quote">"Knowledge shared is knowledge multiplied."</p>
+        </div>
+        <div class="splash-loader-wrap">
+          <div class="splash-spinner"></div>
+          <span class="splash-loading-text">OPENING CAMPUS SHELF...</span>
+        </div>
+      </div>
+
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="brand-row">
+          <div class="brand-title-wrap">
+            <h1 class="folio-script-small">Folio</h1>
+            <span class="exchange-text-small">exchange</span>
+          </div>
+
+          <select id="campus-switcher" class="pill-select" aria-label="Class or semester" onchange="filterListings()">
+            <option value="ALL">All Classes</option>
+            <option value="School • Class 11">School • Class 11</option>
+            <option value="College • Sem 3">College • Sem 3</option>
+          </select>
+        </div>
+
+        <div class="location-filter-bar">
+          <select id="city-filter" class="location-select" aria-label="City" onchange="filterListings()">
+            <option value="ALL">All Cities</option>
+            <option value="New Delhi">New Delhi</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Bengaluru">Bengaluru</option>
+            <option value="Kota">Kota</option>
+            <option value="Chennai">Chennai</option>
+            <option value="Hyderabad">Hyderabad</option>
+          </select>
+          <input type="text" id="buyer-pincode-filter" class="pincode-filter-input" inputmode="numeric" maxlength="6" placeholder="Your pincode" aria-label="Your pincode" oninput="filterListings()" />
+        </div>
+      </header>
+
+      <!-- SCREEN 1: DISCOVERY FEED -->
+      <main id="screen-discover" class="screen active-screen">
+        <div class="search-bar">
+          <input type="search" id="search-input" placeholder="Search title, author, ISBN, city or pincode" aria-label="Search books" oninput="filterListings()" />
+        </div>
+
+        <div class="category-strip">
+          <button class="cat-pill active" onclick="setCategory('ALL', this)">All Books</button>
+          <button class="cat-pill" onclick="setCategory('Core Textbooks', this)">Core Textbooks</button>
+          <button class="cat-pill" onclick="setCategory('Reference & Guides', this)">Reference & Guides</button>
+          <button class="cat-pill" onclick="setCategory('Exam PYQs & Notes', this)">Exam PYQs & Notes</button>
+          <button class="cat-pill" onclick="setCategory('Full-Year Bundles', this)">Full-Year Bundles</button>
+        </div>
+
+        <div id="listings-container" class="listings-list"></div>
+      </main>
+
+      <!-- SCREEN 2: SELL TEXTBOOK -->
+      <main id="screen-sell" class="screen">
+        <div class="section-head">
+          <h2 class="serif-heading">List a Textbook</h2>
+          <p class="subtext">Set your city and 6-digit pincode for local handoffs.</p>
+        </div>
+
+        <div class="quick-scan-box">
+          <span class="mono-label">QUICK ISBN PRESETS</span>
+          <div class="preset-row">
+            <button type="button" class="preset-chip" onclick="autoFillBook('Concepts of Physics', 'H.C. Verma', '978-8177091878', 980, 'Core Textbooks')">H.C. Verma (₹980)</button>
+            <button type="button" class="preset-chip" onclick="autoFillBook('Objective Mathematics', 'R.D. Sharma', '978-9352533459', 1150, 'Reference & Guides')">R.D. Sharma (₹1150)</button>
+            <button type="button" class="preset-chip" onclick="autoFillBook('Higher Engineering Math', 'Dr. B.S. Grewal', '978-8174091956', 1050, 'Core Textbooks')">B.S. Grewal (₹1050)</button>
+          </div>
+        </div>
+
+        <form id="sell-form" class="sell-form" onsubmit="handlePublishBook(event)">
+          <label class="field-label" for="book-title">Book Title</label>
+          <input type="text" id="book-title" required maxlength="120" placeholder="e.g., Concepts of Physics Vol 1 & 2" />
+
+          <div class="grid-2">
+            <div>
+              <label class="field-label" for="book-author">Author / Publisher</label>
+              <input type="text" id="book-author" required maxlength="80" placeholder="e.g., H.C. Verma" />
+            </div>
+            <div>
+              <label class="field-label" for="book-isbn">ISBN-13</label>
+              <input type="text" id="book-isbn" class="mono-input" required inputmode="numeric" maxlength="17" placeholder="978-8177091878" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label class="field-label" for="book-campus">Class / Semester</label>
+              <select id="book-campus">
+                <option value="School • Class 11">School • Class 11</option>
+                <option value="College • Sem 3">College • Sem 3</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="book-category">Category</label>
+              <select id="book-category">
+                <option value="Core Textbooks">Core Textbooks</option>
+                <option value="Reference & Guides">Reference & Guides</option>
+                <option value="Exam PYQs & Notes">Exam PYQs & Notes</option>
+                <option value="Full-Year Bundles">Full-Year Bundles</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="field-label" for="book-mrp">Original Printed MRP (₹)</label>
+          <input type="number" id="book-mrp" class="mono-input" inputmode="numeric" value="980" min="50" max="10000" required oninput="calculateSmartPrice()" />
+
+          <span class="field-label">Condition & Smart Depreciation</span>
+          <div class="condition-grid">
+            <button type="button" class="cond-btn active" onclick="selectCondition('Mint', 0.60, this)">
+              <strong>Mint</strong><span>60%</span>
+            </button>
+            <button type="button" class="cond-btn" onclick="selectCondition('Highlighted', 0.45, this)">
+              <strong>Marked</strong><span>45%</span>
+            </button>
+            <button type="button" class="cond-btn" onclick="selectCondition('Worn', 0.30, this)">
+              <strong>Worn</strong><span>30%</span>
+            </button>
+            <button type="button" class="cond-btn" onclick="selectCondition('Donate', 0, this)">
+              <strong>Donate</strong><span>₹0</span>
+            </button>
+          </div>
+
+          <div class="price-preview-card">
+            <div>
+              <span class="mono-label">EXCHANGE PRICE</span>
+              <p class="subtext">Buyer pays directly via UPI/Cash</p>
+            </div>
+            <div class="calculated-price" id="calculated-price-display">₹588</div>
+          </div>
+
+          <label class="field-label" for="book-delivery-mode">Same-City Handoff Mode</label>
+          <select id="book-delivery-mode">
+            <option value="Same City Pickup">🤝 Buyer Picks Up at Landmark</option>
+            <option value="Same City Local Drop">🛵 Same-City Local Courier / Metro Drop</option>
+          </select>
+
+          <div class="grid-2">
+            <div>
+              <label class="field-label" for="seller-city">Your City</label>
+              <select id="seller-city">
+                <option value="New Delhi">New Delhi</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Bengaluru">Bengaluru</option>
+                <option value="Kota">Kota</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Hyderabad">Hyderabad</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="seller-pincode">Your 6-Digit Pincode</label>
+              <input type="text" id="seller-pincode" class="mono-input" inputmode="numeric" autocomplete="postal-code" pattern="[1-9][0-9]{5}" maxlength="6" required placeholder="110016" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label class="field-label" for="seller-name">Your Name (Seller)</label>
+              <input type="text" id="seller-name" autocomplete="name" required maxlength="60" placeholder="Aarav Mehta" />
+            </div>
+            <div>
+              <label class="field-label" for="seller-phone">Your 10-Digit Mobile</label>
+              <input type="tel" id="seller-phone" class="mono-input" inputmode="numeric" autocomplete="tel-national" pattern="[6-9][0-9]{9}" maxlength="10" required placeholder="9876543210" />
+            </div>
+          </div>
+
+          <label class="field-label" for="seller-address">Pickup Landmark / Street Address</label>
+          <input type="text" id="seller-address" required maxlength="200" placeholder="e.g., H-24 Green Park Ext" />
+
+          <button type="submit" id="publish-btn" class="btn-primary-meadow">Publish Book to Feed</button>
+        </form>
+      </main>
+
+      <!-- SCREEN 3: VAULT & HANDOFF -->
+      <main id="screen-vault" class="screen">
+        <div class="section-head">
+          <h2 class="serif-heading">Bookings & Contacts</h2>
+          <p class="subtext">Phone numbers, addresses, and PINs unlock upon booking.</p>
+        </div>
+
+        <div class="role-toggle">
+          <button id="tab-buying" class="role-btn active" onclick="switchVaultRole('BUYING')">Buying (Seller Contact)</button>
+          <button id="tab-selling" class="role-btn" onclick="switchVaultRole('SELLING')">Selling (Buyer Contact)</button>
+        </div>
+
+        <div id="vault-buying-view">
+          <div id="buyer-reserved-list" class="listings-list"></div>
+        </div>
+
+        <div id="vault-selling-view" class="hidden">
+          <div class="pin-verifier-card">
+            <span class="mono-label">VERIFY HANDOFF</span>
+            <h3 class="serif-card-title">Enter Buyer's 4-Digit PIN</h3>
+            <p class="subtext">Ask the buyer for their 4-digit PIN at pickup to mark the book sold.</p>
+            <div class="pin-input-row">
+              <input type="text" id="verify-pin-input" class="mono-input pin-box" inputmode="numeric" maxlength="4" placeholder="4829" aria-label="Buyer's 4-digit PIN" />
+              <button class="btn-primary-meadow" onclick="verifyHandoffPin()">Mark Sold</button>
+            </div>
+            <p id="pin-feedback" class="pin-feedback" role="status"></p>
+          </div>
+
+          <h4 class="sub-section-title">My Listed Textbooks</h4>
+          <div id="seller-active-list" class="listings-list"></div>
+        </div>
+      </main>
+
+      <!-- BUYER BOOKING MODAL -->
+      <div id="booking-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-book-title">
+        <div class="modal-card">
+          <span class="mono-label" id="modal-delivery-badge">CONFIRM BOOKING</span>
+          <h3 class="serif-card-title" id="modal-book-title">Reserve Textbook</h3>
+          <p class="subtext" id="modal-book-location" style="margin-bottom: 10px;"></p>
+
+          <form onsubmit="confirmReservation(event)">
+            <input type="hidden" id="modal-book-id" />
+            <label class="field-label" for="buyer-name-input">Your Name (Buyer)</label>
+            <input type="text" id="buyer-name-input" autocomplete="name" required maxlength="60" placeholder="e.g., Rohan Gupta" style="margin-bottom: 8px;" />
+
+            <div class="grid-2" style="margin-bottom: 8px;">
+              <div>
+                <label class="field-label" for="buyer-phone-input">10-Digit Mobile</label>
+                <input type="tel" id="buyer-phone-input" class="mono-input" inputmode="numeric" autocomplete="tel-national" pattern="[6-9][0-9]{9}" maxlength="10" required placeholder="9123456789" />
+              </div>
+              <div>
+                <label class="field-label" for="buyer-pincode-input">Your Pincode</label>
+                <input type="text" id="buyer-pincode-input" class="mono-input" inputmode="numeric" autocomplete="postal-code" pattern="[1-9][0-9]{5}" maxlength="6" required placeholder="110016" />
+              </div>
+            </div>
+
+            <label class="field-label" for="buyer-address-input">Your Locality / Address</label>
+            <input type="text" id="buyer-address-input" required maxlength="200" placeholder="e.g., Hostel 4, Powai" style="margin-bottom: 10px;" />
+
+            <p id="modal-pincode-warning" class="pin-feedback" role="alert" style="margin-bottom: 10px;"></p>
+
+            <div class="grid-2">
+              <button type="button" class="cat-pill" onclick="closeReserveModal()">Cancel</button>
+              <button type="submit" id="booking-submit" class="btn-primary-meadow">Book & Unlock</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- END-OF-ORDER FEEDBACK MODAL -->
+      <div id="feedback-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-book-title">
+        <div class="modal-card">
+          <span class="mono-label">HANDOFF COMPLETE</span>
+          <h3 class="serif-card-title" id="feedback-book-title">Rate Your Exchange</h3>
+          <p class="subtext" id="feedback-final-price" style="margin-bottom: 12px;"></p>
+
+          <form onsubmit="submitOrderFeedback(event)">
+            <input type="hidden" id="feedback-book-id" />
+            <span class="field-label">Select Rating (1 to 5 Stars)</span>
+            <div class="rating-pill-row">
+              <button type="button" class="rating-pill" onclick="selectStarRating(1, this)">1 ★</button>
+              <button type="button" class="rating-pill" onclick="selectStarRating(2, this)">2 ★</button>
+              <button type="button" class="rating-pill" onclick="selectStarRating(3, this)">3 ★</button>
+              <button type="button" class="rating-pill" onclick="selectStarRating(4, this)">4 ★</button>
+              <button type="button" class="rating-pill active" onclick="selectStarRating(5, this)">5 ★</button>
+            </div>
+
+            <span class="field-label">Quick Experience Tag</span>
+            <div class="preset-row" style="margin-bottom: 10px;">
+              <button type="button" class="preset-chip" onclick="setFeedbackTag('Exact Condition & Final Price Honored')">✓ Final Price Honored</button>
+              <button type="button" class="preset-chip" onclick="setFeedbackTag('Book Condition Matched Listing')">✓ Condition Matched</button>
+              <button type="button" class="preset-chip" onclick="setFeedbackTag('On-Time & Polite Student')">✓ Polite & On-Time</button>
+            </div>
+
+            <label class="field-label" for="feedback-note-input">Feedback Note</label>
+            <input type="text" id="feedback-note-input" required maxlength="200" placeholder="e.g., Smooth handoff!" style="margin-bottom: 14px;" />
+            <button type="submit" class="btn-primary-meadow" style="width: 100%;">Submit Feedback</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav" aria-label="Main">
+        <button class="nav-item active" onclick="switchScreen('discover', this)">
+          <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M9 7h6"/></svg>
+          <span class="nav-label">Discover</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('sell', this)">
+          <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="nav-label">Sell Book</span>
+        </button>
+        <button class="nav-item" onclick="switchScreen('vault', this)">
+          <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>
+          <span class="nav-label">Contacts & PIN</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
